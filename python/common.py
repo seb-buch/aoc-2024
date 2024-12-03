@@ -34,6 +34,6 @@ def check_result(actual: str, expected: str) -> None:
             print("⚠️ No known solution... Can not check")
             return
 
-        print("❌ Solution is invalid!")
+        print(f"❌ Solution is invalid! (expected: {expected}, actual: {actual})")
         return
     print("✅ Solution is valid!")
