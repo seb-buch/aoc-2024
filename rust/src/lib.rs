@@ -24,17 +24,17 @@ macro_rules! time_function {
 pub fn pretty_duration(duration: Duration) -> String {
     const UNITS: [&str; 4] = ["ns", "us", "ms", "s"];
 
-    let mut duration_ns = duration.as_nanos();
+    let mut duration_ns: f64 = duration.as_nanos() as f64;
     let mut unit = 0;
-    while duration_ns > 1000 {
-        duration_ns /= 1000;
+    while duration_ns > 1000f64 {
+        duration_ns /= 1000f64;
         unit += 1;
         if unit >= UNITS.len() {
             break;
         }
     }
 
-    format!("{} {}", duration_ns, UNITS[unit])
+    format!("{:.3} {}", duration_ns, UNITS[unit])
 }
 
 pub fn check_result(actual: &str, expected: &str) {
