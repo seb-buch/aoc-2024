@@ -16,16 +16,16 @@ struct Position {
 #[derive(Debug, PartialEq, Default, Copy, Clone)]
 enum Direction {
     #[default]
-    UP,
-    RIGHT,
-    DOWN,
-    LEFT,
+    Up,
+    Right,
+    Down,
+    Left,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 enum GuardPatrolStatus {
     #[default]
-    NOTSTARTED,
+    NotStarted,
     OnGoing,
     Finished,
     StuckInLoop,
@@ -34,7 +34,7 @@ enum GuardPatrolStatus {
 #[derive(Default, Debug, Copy, Clone)]
 enum GuardMoveOutcome {
     #[default]
-    BLOCKED,
+    Blocked,
     Exited,
 }
 
@@ -122,7 +122,7 @@ impl GuardPatrol {
             guard,
             map,
             guard_stops: Vec::new(),
-            status: GuardPatrolStatus::NOTSTARTED,
+            status: GuardPatrolStatus::NotStarted,
         }
     }
 
@@ -173,7 +173,7 @@ impl GuardPatrol {
     fn reset(&mut self) {
         self.guard.reset();
         self.guard_stops.clear();
-        self.status = GuardPatrolStatus::NOTSTARTED;
+        self.status = GuardPatrolStatus::NotStarted;
     }
 
     fn tick(&mut self) {
@@ -183,7 +183,7 @@ impl GuardPatrol {
             return;
         }
 
-        if matches!(self.status, GuardPatrolStatus::NOTSTARTED) {
+        if matches!(self.status, GuardPatrolStatus::NotStarted) {
             self.save_guard_stop();
             self.status = GuardPatrolStatus::OnGoing;
         }
@@ -272,19 +272,19 @@ impl Guard {
 
         loop {
             let new_position = match self.direction {
-                Direction::UP => Position {
+                Direction::Up => Position {
                     row: self.position.row - 1,
                     col: self.position.col,
                 },
-                Direction::RIGHT => Position {
+                Direction::Right => Position {
                     row: self.position.row,
                     col: self.position.col + 1,
                 },
-                Direction::DOWN => Position {
+                Direction::Down => Position {
                     row: self.position.row + 1,
                     col: self.position.col,
                 },
-                Direction::LEFT => Position {
+                Direction::Left => Position {
                     row: self.position.row,
                     col: self.position.col - 1,
                 },
@@ -292,7 +292,7 @@ impl Guard {
 
             if map.is_position_an_obstacle(&new_position) {
                 self.turn();
-                return GuardMoveOutcome::BLOCKED;
+                return GuardMoveOutcome::Blocked;
             }
 
             if map.is_position_outside(&new_position) {
@@ -306,10 +306,10 @@ impl Guard {
 
     fn turn(&mut self) {
         self.direction = match self.direction {
-            Direction::UP => Direction::RIGHT,
-            Direction::RIGHT => Direction::DOWN,
-            Direction::DOWN => Direction::LEFT,
-            Direction::LEFT => Direction::UP,
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
         }
     }
 }
@@ -415,7 +415,7 @@ mod tests {
             "guard is expected to be at position {:?} (actual: {:?}",
             expected_position, guard.position
         );
-        assert_eq!(guard.direction, Direction::UP);
+        assert_eq!(guard.direction, Direction::Up);
     }
 
     #[test]
@@ -423,7 +423,7 @@ mod tests {
         // Test setup
         let input_data = get_input_data();
         let expected_position = Position { row: 1, col: 4 };
-        let expected_direction = Direction::RIGHT;
+        let expected_direction = Direction::Right;
         let expected_trail = [
             Position { row: 6, col: 4 },
             Position { row: 5, col: 4 },
@@ -467,51 +467,51 @@ mod tests {
         let expected_stops = [
             GuardStop {
                 pos: Position { row: 6, col: 4 },
-                direction: Direction::UP,
+                direction: Direction::Up,
             },
             GuardStop {
                 pos: Position { row: 1, col: 4 },
-                direction: Direction::RIGHT,
+                direction: Direction::Right,
             },
             GuardStop {
                 pos: Position { row: 1, col: 8 },
-                direction: Direction::DOWN,
+                direction: Direction::Down,
             },
             GuardStop {
                 pos: Position { row: 6, col: 8 },
-                direction: Direction::LEFT,
+                direction: Direction::Left,
             },
             GuardStop {
                 pos: Position { row: 6, col: 2 },
-                direction: Direction::UP,
+                direction: Direction::Up,
             },
             GuardStop {
                 pos: Position { row: 4, col: 2 },
-                direction: Direction::RIGHT,
+                direction: Direction::Right,
             },
             GuardStop {
                 pos: Position { row: 4, col: 6 },
-                direction: Direction::DOWN,
+                direction: Direction::Down,
             },
             GuardStop {
                 pos: Position { row: 8, col: 6 },
-                direction: Direction::LEFT,
+                direction: Direction::Left,
             },
             GuardStop {
                 pos: Position { row: 8, col: 1 },
-                direction: Direction::UP,
+                direction: Direction::Up,
             },
             GuardStop {
                 pos: Position { row: 7, col: 1 },
-                direction: Direction::RIGHT,
+                direction: Direction::Right,
             },
             GuardStop {
                 pos: Position { row: 7, col: 7 },
-                direction: Direction::DOWN,
+                direction: Direction::Down,
             },
             GuardStop {
                 pos: Position { row: 9, col: 7 },
-                direction: Direction::DOWN,
+                direction: Direction::Down,
             },
         ];
         let expected_outcome = GuardPatrolStatus::Finished;
