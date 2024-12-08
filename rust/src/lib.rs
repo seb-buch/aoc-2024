@@ -23,6 +23,7 @@ macro_rules! time_function {
 
 pub fn pretty_duration(duration: Duration) -> String {
     const UNITS: [&str; 4] = ["ns", "us", "ms", "s"];
+    const PERFORMANCE_EMOJI: [&str; 4] = ["🚀", "🏎️", "🐎", "🐌"];
 
     let mut duration_ns: f64 = duration.as_nanos() as f64;
     let mut unit = 0;
@@ -34,7 +35,10 @@ pub fn pretty_duration(duration: Duration) -> String {
         }
     }
 
-    format!("{:.3} {}", duration_ns, UNITS[unit])
+    format!(
+        "{:.3} {} {}",
+        duration_ns, UNITS[unit], PERFORMANCE_EMOJI[unit]
+    )
 }
 
 pub fn check_result(actual: &str, expected: &str) {
