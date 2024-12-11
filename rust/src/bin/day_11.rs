@@ -1,61 +1,68 @@
-use crate::stones::StoneSet;
+use crate::stone::Stoneset;
 use anyhow::*;
 use aoc2024::*;
 use std::str::FromStr;
 
 const DAY: &str = "11";
 const SOLUTION_PART_1: &str = "233875";
-const SOLUTION_PART_2: &str = "TODO"; // TODO: Replace with actual value
+const SOLUTION_PART_2: &str = "277444936413293";
 
-mod stones {
+mod stone {
+    use std::collections::HashMap;
     use std::str::FromStr;
 
-    #[derive(Debug, PartialEq)]
-    pub struct StoneSet {
-        pub stones: Vec<usize>,
+    pub struct Stoneset {
+        pub stones: HashMap<usize, usize>,
     }
 
-    impl FromStr for StoneSet {
+    impl FromStr for Stoneset {
         type Err = anyhow::Error;
 
         fn from_str(input: &str) -> Result<Self, Self::Err> {
-            let stones = input
-                .split_whitespace()
-                .map(|num| num.parse().unwrap())
-                .collect();
+            let mut stones: HashMap<usize, usize> = HashMap::new();
+
+            for stone in input.split_whitespace() {
+                stones.insert(stone.parse()?, 1);
+            }
 
             Ok(Self { stones })
         }
     }
 
-    impl StoneSet {
+    impl Stoneset {
         pub fn blink(&mut self) {
-            let mut new_stones: Vec<usize> = Vec::new();
+            let mut new_stones: HashMap<usize, usize> = HashMap::new();
 
-            for num in self.stones.iter() {
-                if *num == 0 {
-                    new_stones.push(1);
+            for (stone, count) in &self.stones {
+                if *stone == 0 {
+                    new_stones
+                        .entry(1)
+                        .and_modify(|value| *value += count)
+                        .or_insert(*count);
                     continue;
                 }
 
-                let as_str = format!("{}", num);
+                let as_str = format!("{}", stone);
                 let n_digits = as_str.len();
                 if n_digits % 2 == 0 {
-                    new_stones.push(as_str[..n_digits / 2].parse().unwrap());
-                    new_stones.push(as_str[n_digits / 2..].parse().unwrap());
+                    new_stones
+                        .entry(as_str[..n_digits / 2].parse().unwrap())
+                        .and_modify(|value| *value += count)
+                        .or_insert(*count);
+                    new_stones
+                        .entry(as_str[n_digits / 2..].parse().unwrap())
+                        .and_modify(|value| *value += count)
+                        .or_insert(*count);
                     continue;
                 }
 
-                new_stones.push(num * 2024);
+                new_stones
+                    .entry(stone * 2024)
+                    .and_modify(|value| *value += count)
+                    .or_insert(*count);
             }
 
             self.stones = new_stones;
-        }
-
-        pub fn blinks(&mut self, n_blinks: usize) {
-            for _ in 0..n_blinks {
-                self.blink();
-            }
         }
     }
 }
@@ -63,17 +70,28 @@ mod stones {
 //region Part 1
 
 fn solve_part_1(input_data: &str) -> Result<String> {
-    let mut stone_set = StoneSet::from_str(input_data)?;
-    stone_set.blinks(25);
-    Ok(format!("{}", stone_set.stones.len()))
+    let mut stoneset = Stoneset::from_str(input_data)?;
+
+    for _ in 0..25 {
+        stoneset.blink();
+    }
+
+    let n_stones = stoneset.stones.values().sum::<usize>();
+    Ok(format!("{}", n_stones))
 }
 //endregion
 
 //region Part 2
 
 fn solve_part_2(input_data: &str) -> Result<String> {
-    let lines = input_data.lines();
-    Ok(format!("{}", lines.count()))
+    let mut stoneset = Stoneset::from_str(input_data)?;
+
+    for _ in 0..75 {
+        stoneset.blink();
+    }
+
+    let n_stones = stoneset.stones.values().sum::<usize>();
+    Ok(format!("{}", n_stones))
 }
 //endregion
 
@@ -104,55 +122,59 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::stones::StoneSet;
+    use crate::stone::Stoneset;
+    use std::collections::HashMap;
+    use std::str::FromStr;
+
     #[test]
     fn should_load_from_str() {
-        let expected = StoneSet {
-            stones: vec![125, 17],
-        };
+        // Test setup
+        let expected = HashMap::from([(125, 1usize), (17, 1)]);
 
-        let input = "125 17\n";
+        // Given a string
+        let input = "125 17";
 
-        let actual = input.parse::<StoneSet>().unwrap();
-        assert_eq!(expected, actual);
+        // When we load a stoneset from it
+        let stones = Stoneset::from_str(input).unwrap();
+
+        // Then it should correspond to what is expected
+        for (stone, count) in expected {
+            assert_eq!(count, *stones.stones.get(&stone).unwrap());
+        }
     }
 
     #[test]
-    fn should_blink_example1() {
-        let expected = [253000usize, 1, 7];
+    fn should_blink() {
+        // Test setup
+        let expected = HashMap::from([(253000, 1usize), (1, 1), (7, 1)]);
 
-        let mut stone_set = StoneSet {
-            stones: vec![125, 17],
-        };
+        // Given a stoneset
+        let mut stoneset = Stoneset::from_str("125 17").unwrap();
 
-        stone_set.blink();
+        // When we blink
+        stoneset.blink();
 
-        assert_eq!(expected, *stone_set.stones);
+        // Then it should correspond to what is expected
+        for (stone, count) in expected {
+            assert_eq!(count, *stoneset.stones.get(&stone).unwrap());
+        }
     }
 
     #[test]
-    fn should_blink_example2() {
-        let expected = [512, 72, 2024, 2, 0, 2, 4, 2867, 6032];
-
-        let mut stone_set = StoneSet {
-            stones: vec![512072, 1, 20, 24, 28676032],
-        };
-
-        stone_set.blink();
-
-        assert_eq!(expected, *stone_set.stones);
-    }
-
-    #[test]
-    fn should_blinks_example1() {
+    fn should_pass_example() {
+        // Test setup
         let expected = 55312;
+        let n_blinks = 25;
 
-        let mut stone_set = StoneSet {
-            stones: vec![125, 17],
-        };
+        // Given a stoneset
+        let mut stoneset = Stoneset::from_str("125 17").unwrap();
 
-        stone_set.blinks(25);
+        // When we blink a few times
+        for _ in 0..n_blinks {
+            stoneset.blink();
+        }
 
-        assert_eq!(expected, stone_set.stones.len());
+        // Then we whould get the expected total
+        assert_eq!(expected, stoneset.stones.values().sum::<usize>());
     }
 }
