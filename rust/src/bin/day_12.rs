@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 const DAY: &str = "12";
 const SOLUTION_PART_1: &str = "1450816";
-const SOLUTION_PART_2: &str = "TODO"; // TODO: Replace with actual value
+const SOLUTION_PART_2: &str = "865662";
 
 mod garden {
     use std::collections::HashMap;
@@ -66,6 +66,76 @@ mod garden {
                 south_neighbour,
                 west_neighbour,
                 east_neighbour,
+            ]
+        }
+
+        fn get_neighbour_around_position(
+            &self,
+            position: &(usize, usize),
+        ) -> [Option<(usize, usize)>; 8] {
+            let (row, col) = *position;
+
+            let north_neighbour = match row {
+                0 => None,
+                _ => Some((row - 1, col)),
+            };
+
+            let northeast_neighbour = match row {
+                0 => None,
+                _ => match col {
+                    value if value == self.width - 1 => None,
+                    _ => Some((row - 1, col + 1)),
+                },
+            };
+
+            let east_neighbour = match col {
+                value if value == self.width - 1 => None,
+                _ => Some((row, col + 1)),
+            };
+
+            let southeast_neighbour = match row {
+                value if value == self.height - 1 => None,
+                _ => match col {
+                    value if value == self.width - 1 => None,
+                    _ => Some((row + 1, col + 1)),
+                },
+            };
+
+            let south_neighbour = match row {
+                value if value == self.height - 1 => None,
+                _ => Some((row + 1, col)),
+            };
+
+            let southwest_neighbour = match row {
+                value if value == self.height - 1 => None,
+                _ => match col {
+                    0 => None,
+                    _ => Some((row + 1, col - 1)),
+                },
+            };
+
+            let west_neighbour = match col {
+                0 => None,
+                _ => Some((row, col - 1)),
+            };
+
+            let northwest_neighbour = match row {
+                0 => None,
+                _ => match col {
+                    0 => None,
+                    _ => Some((row - 1, col - 1)),
+                },
+            };
+
+            [
+                north_neighbour,
+                northeast_neighbour,
+                east_neighbour,
+                southeast_neighbour,
+                south_neighbour,
+                southwest_neighbour,
+                west_neighbour,
+                northwest_neighbour,
             ]
         }
 
@@ -150,6 +220,78 @@ mod garden {
             self.regions
                 .keys()
                 .map(|region_id| (*region_id, self.compute_price_for_region(*region_id)))
+                .collect()
+        }
+
+        fn compute_discounted_price_for_region(&self, region_id: usize) -> usize {
+            let mut total_edges = 0usize;
+
+            let member_positions = self.regions.get(&region_id).unwrap();
+            let area = member_positions.len();
+            let region_char =
+                self.tiles[self.get_index_from_position(member_positions.first().unwrap())];
+
+            let is_from_same_region = |position: Option<(usize, usize)>| {
+                if let Some(position) = position {
+                    let index = self.get_index_from_position(&position);
+                    let char = self.tiles[index];
+                    if char != region_char {
+                        return false;
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+
+            for position in member_positions {
+                let neighbours = self.get_neighbour_around_position(position);
+
+                let mut n_edges = 0usize;
+                for edge in 0..4 {
+                    let edge_neighbour_1 = neighbours[edge * 2];
+                    let edge_neighbour_2 = neighbours[edge * 2 + 1];
+                    let edge_neighbour_3 = neighbours[(edge * 2 + 2) % 8];
+
+                    let mut n_consecutive_foreign_neighbours = 0usize;
+                    if !is_from_same_region(edge_neighbour_1) {
+                        n_consecutive_foreign_neighbours += 1;
+                    }
+                    if !is_from_same_region(edge_neighbour_2) {
+                        n_consecutive_foreign_neighbours += 1;
+                    } else {
+                        n_consecutive_foreign_neighbours = 0;
+                    }
+                    if !is_from_same_region(edge_neighbour_3) {
+                        n_consecutive_foreign_neighbours += 1;
+                    } else {
+                        n_consecutive_foreign_neighbours = 0;
+                    }
+
+                    if n_consecutive_foreign_neighbours % 2 == 1 {
+                        n_edges += 1;
+                    }
+                }
+
+                total_edges += n_edges;
+            }
+
+            area * total_edges
+        }
+
+        pub fn compute_discounted_price_per_region(&mut self) -> HashMap<usize, usize> {
+            if self.regions.is_empty() {
+                self.identify_regions();
+            }
+
+            self.regions
+                .keys()
+                .map(|region_id| {
+                    (
+                        *region_id,
+                        self.compute_discounted_price_for_region(*region_id),
+                    )
+                })
                 .collect()
         }
     }
@@ -288,6 +430,26 @@ MMMISSJEEE";
             let sum = prices.values().sum::<usize>();
             assert_eq!(expected_sum, sum);
         }
+
+        #[test]
+        fn should_compute_discounted_price_for_small_example() {
+            let expected_sum = 80usize;
+            let prices = Garden::from_str(SMALL_EXAMPLE)
+                .unwrap()
+                .compute_discounted_price_per_region();
+            let sum = prices.values().sum::<usize>();
+            assert_eq!(expected_sum, sum);
+        }
+
+        #[test]
+        fn should_compute_discounted_price_for_bigger_example() {
+            let expected_sum = 1206usize;
+            let prices = Garden::from_str(BIGGER_EXAMPLE)
+                .unwrap()
+                .compute_discounted_price_per_region();
+            let sum = prices.values().sum::<usize>();
+            assert_eq!(expected_sum, sum);
+        }
     }
 }
 //region Part 1
@@ -302,8 +464,9 @@ fn solve_part_1(input_data: &str) -> Result<String> {
 //region Part 2
 
 fn solve_part_2(input_data: &str) -> Result<String> {
-    let lines = input_data.lines();
-    Ok(format!("{}", lines.count()))
+    let mut garden = Garden::from_str(input_data)?;
+    let prices = garden.compute_discounted_price_per_region();
+    Ok(format!("{}", prices.values().sum::<usize>()))
 }
 //endregion
 
